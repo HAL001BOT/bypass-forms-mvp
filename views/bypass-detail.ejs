@@ -18,6 +18,7 @@
       </div>
       <div class="row gap wrap">
         <a class="button ghost" href="/bypasses">Dashboard</a>
+        <a class="button" href="/bypasses/<%= form.id %>/pdf">Export PDF</a>
         <% if (permissions.canEdit) { %><a class="button primary" href="/bypasses/<%= form.id %>/edit">Edit</a><% } %>
       </div>
     </header>

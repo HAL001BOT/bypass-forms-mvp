@@ -2,6 +2,8 @@ const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
+const path = require('path');
+const PDFDocument = require('pdfkit');
 const { db, migrate, nextBypassNumber, audit, seedDefaultUsersIfEmpty } = require('./db');
 
 migrate();
@@ -194,6 +196,100 @@ function listUsersForAdmin() {
   `).all();
 }
 
+function fieldValue(value) {
+  const text = Array.isArray(value) ? value.filter(Boolean).join(', ') : String(value || '').trim();
+  return text || 'Not recorded';
+}
+
+function listWithOther(list, other) {
+  const values = Array.isArray(list) ? list.filter(Boolean) : [];
+  if (other) values.push(other);
+  return fieldValue(values);
+}
+
+function addPdfField(doc, label, value) {
+  if (doc.y > 705) doc.addPage();
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('#475569').text(label.toUpperCase());
+  doc.font('Helvetica').fontSize(10).fillColor('#111827').text(fieldValue(value), { lineGap: 2 });
+  doc.moveDown(0.65);
+}
+
+function addPdfSection(doc, title, fields) {
+  if (doc.y > 675) doc.addPage();
+  doc.moveDown(0.6);
+  doc.font('Helvetica-Bold').fontSize(14).fillColor('#14532d').text(title);
+  doc.moveTo(doc.page.margins.left, doc.y + 3).lineTo(doc.page.width - doc.page.margins.right, doc.y + 3).strokeColor('#bbf7d0').stroke();
+  doc.moveDown(0.8);
+  for (const [label, value] of fields) addPdfField(doc, label, value);
+}
+
+function renderBypassPdf(form, res) {
+  const doc = new PDFDocument({ size: 'LETTER', margin: 44, info: { Title: form.bypass_number } });
+  const filename = `${form.bypass_number.replace(/[^a-z0-9-]+/gi, '_')}.pdf`;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  doc.pipe(res);
+
+  const logoPath = path.join(__dirname, 'public', 'img', 'sachem.png');
+  doc.image(logoPath, 44, 34, { width: 58 });
+  doc.font('Helvetica-Bold').fontSize(18).fillColor('#14532d').text('SACHEM Bypass Form', 116, 38);
+  doc.font('Helvetica').fontSize(10).fillColor('#475569').text(form.bypass_number, 116, 62);
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827').text(String(form.status).toUpperCase(), 444, 42, { align: 'right' });
+  doc.moveDown(2.5);
+
+  addPdfSection(doc, 'General Information', [
+    ['Requested At', form.requested_at],
+    ['Requested By', form.requested_by],
+    ['Area / Unit', form.area_unit],
+    ['Equipment Tag', form.equipment_tag],
+    ['Cause & Effect Reference', form.cause_effect_ref],
+  ]);
+
+  addPdfSection(doc, 'Bypass and Risk', [
+    ['System', listWithOther(form.system, form.system_other)],
+    ['Description', form.bypass_description],
+    ['Reason', listWithOther(form.reason, form.reason_other)],
+    ['Hazard', listWithOther(form.hazard, form.hazard_other)],
+    ['Consequence', form.consequence],
+    ['Risk Classification', form.risk_classification],
+    ['Process Conditions', form.process_conditions],
+    ['Other Active Bypasses', form.other_active_bypasses],
+    ['Other Active Bypasses Details', form.other_active_bypasses_details],
+  ]);
+
+  addPdfSection(doc, 'Controls and Monitoring', [
+    ['Compensating Measures', form.compensating_measures],
+    ['Operating Restrictions', form.operating_restrictions],
+    ['Review Frequency', form.review_frequency],
+    ['Responsible Person', form.responsible_person],
+    ['Shift Handover Required', form.shift_handover_required],
+  ]);
+
+  addPdfSection(doc, 'Implementation', [
+    ['Applied By', form.applied_by],
+    ['Applied At', form.applied_at],
+    ['Verified By', form.verified_by],
+    ['HMI Confirmed', form.hmi_confirmed],
+    ['Shift Log Logged', form.shift_log_logged],
+  ]);
+
+  addPdfSection(doc, 'Restoration / Closeout', [
+    ['Removed By', form.removed_by],
+    ['Removed At', form.removed_at],
+    ['Function Verified', form.function_verified],
+    ['Verification Method', form.verification_method],
+    ['Measures Removed', form.measures_removed],
+    ['Closed By', form.closed_by],
+  ]);
+
+  addPdfSection(doc, 'Approvals', Object.values(form.approvals).map((approval) => [
+    approval.role,
+    [approval.name || 'Pending', approval.signed_at].filter(Boolean).join(' - '),
+  ]));
+
+  doc.end();
+}
+
 app.get('/', (req, res) => res.redirect(req.session.user ? '/bypasses' : '/login'));
 
 app.get('/login', (req, res) => res.render('login', { error: null }));
@@ -294,6 +390,26 @@ app.post('/bypasses', auth, (req, res) => {
   return res.redirect(`/bypasses/${info.lastInsertRowid}`);
 });
 
+app.get('/bypasses/export.csv', auth, (_req, res) => {
+  const rows = db.prepare(`
+    SELECT bypass_number, status, requested_at, requested_by, area_unit, equipment_tag, risk_classification, responsible_person
+    FROM bypass_forms
+    ORDER BY requested_at DESC, id DESC
+  `).all();
+  const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const header = ['Bypass Number', 'Status', 'Requested At', 'Requested By', 'Area / Unit', 'Equipment Tag', 'Risk', 'Responsible Person'];
+  const csv = [header.map(escape).join(','), ...rows.map((r) => Object.values(r).map(escape).join(','))].join('\n');
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="bypass-forms.csv"');
+  res.send(csv);
+});
+
+app.get('/bypasses/:id/pdf', auth, (req, res) => {
+  const form = hydrateForm(db.prepare('SELECT * FROM bypass_forms WHERE id = ?').get(req.params.id));
+  if (!form) return res.status(404).send('Bypass form not found.');
+  return renderBypassPdf(form, res);
+});
+
 app.get('/bypasses/:id', auth, (req, res) => {
   const form = hydrateForm(db.prepare('SELECT * FROM bypass_forms WHERE id = ?').get(req.params.id));
   if (!form) return res.status(404).send('Bypass form not found.');
@@ -352,20 +468,6 @@ app.post('/bypasses/:id/transition', auth, (req, res) => {
     .run(target, req.session.user.id, form.id);
   audit(form.id, 'status_changed', { from: form.status, to: target }, req.session.user.id);
   res.redirect(`/bypasses/${form.id}`);
-});
-
-app.get('/bypasses/export.csv', auth, (_req, res) => {
-  const rows = db.prepare(`
-    SELECT bypass_number, status, requested_at, requested_by, area_unit, equipment_tag, risk_classification, responsible_person
-    FROM bypass_forms
-    ORDER BY requested_at DESC, id DESC
-  `).all();
-  const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const header = ['Bypass Number', 'Status', 'Requested At', 'Requested By', 'Area / Unit', 'Equipment Tag', 'Risk', 'Responsible Person'];
-  const csv = [header.map(escape).join(','), ...rows.map((r) => Object.values(r).map(escape).join(','))].join('\n');
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'attachment; filename="bypass-forms.csv"');
-  res.send(csv);
 });
 
 if (require.main === module) {
