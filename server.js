@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const { db, migrate, nextBypassNumber, audit, seedDefaultUsersIfEmpty } = require('./db');
 
 migrate();
-if (process.env.SEED_DEFAULT_PASS) seedDefaultUsersIfEmpty(process.env.SEED_DEFAULT_PASS);
+seedDefaultUsersIfEmpty(process.env.SEED_DEFAULT_PASS || 'bypass123!');
 
 const app = express();
 const PORT = process.env.PORT || 3010;
