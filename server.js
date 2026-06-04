@@ -209,15 +209,21 @@ function listWithOther(list, other) {
 
 function addPdfField(doc, label, value) {
   if (doc.y > 705) doc.addPage();
-  doc.font('Helvetica-Bold').fontSize(9).fillColor('#475569').text(label.toUpperCase());
-  doc.font('Helvetica').fontSize(10).fillColor('#111827').text(fieldValue(value), { lineGap: 2 });
+  const x = doc.page.margins.left;
+  const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  doc.x = x;
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('#475569').text(label.toUpperCase(), x, doc.y, { width });
+  doc.font('Helvetica').fontSize(10).fillColor('#111827').text(fieldValue(value), x, doc.y, { width, lineGap: 2 });
   doc.moveDown(0.65);
 }
 
 function addPdfSection(doc, title, fields) {
   if (doc.y > 675) doc.addPage();
+  const x = doc.page.margins.left;
+  const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  doc.x = x;
   doc.moveDown(0.6);
-  doc.font('Helvetica-Bold').fontSize(14).fillColor('#14532d').text(title);
+  doc.font('Helvetica-Bold').fontSize(14).fillColor('#14532d').text(title, x, doc.y, { width });
   doc.moveTo(doc.page.margins.left, doc.y + 3).lineTo(doc.page.width - doc.page.margins.right, doc.y + 3).strokeColor('#bbf7d0').stroke();
   doc.moveDown(0.8);
   for (const [label, value] of fields) addPdfField(doc, label, value);
@@ -235,7 +241,8 @@ function renderBypassPdf(form, res) {
   doc.font('Helvetica-Bold').fontSize(18).fillColor('#14532d').text('SACHEM Bypass Form', 116, 38);
   doc.font('Helvetica').fontSize(10).fillColor('#475569').text(form.bypass_number, 116, 62);
   doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827').text(String(form.status).toUpperCase(), 444, 42, { align: 'right' });
-  doc.moveDown(2.5);
+  doc.x = doc.page.margins.left;
+  doc.y = 104;
 
   addPdfSection(doc, 'General Information', [
     ['Requested At', form.requested_at],
