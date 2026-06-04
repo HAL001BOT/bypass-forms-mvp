@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bypass Forms Login</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="login-page">
+  <main class="auth-layout">
+    <section class="auth-shell">
+      <aside class="login-aside">
+        <div class="login-aside-overlay">
+          <span class="aside-kicker">SACHEM EHS&S</span>
+          <h1>Interlock / ESD bypass control</h1>
+          <p>Track active bypasses, approval roles, compensating measures, and restoration closeout.</p>
+          <ul>
+            <li>Draft-to-close status tracking</li>
+            <li>Risk and compensating measure records</li>
+            <li>Audit history for every change</li>
+          </ul>
+        </div>
+      </aside>
+      <section class="login-card">
+        <div class="login-header">
+          <span class="login-logo"><img src="/img/sachem.gif" alt="Sachem" /></span>
+          <div>
+            <p class="login-label">Bypass Forms</p>
+            <p class="muted">Sign in to continue.</p>
+          </div>
+        </div>
+        <% if (error) { %><p class="error"><%= error %></p><% } %>
+        <form method="post" action="/login" class="login-form form-stack">
+          <label><span>Username</span><input name="username" autocomplete="username" autofocus /></label>
+          <label><span>Password</span><input name="password" type="password" autocomplete="current-password" /></label>
+          <button class="login-action">Sign in</button>
+        </form>
+        <p class="login-meta"><span class="status-dot"></span> Local bypass permit tracker</p>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

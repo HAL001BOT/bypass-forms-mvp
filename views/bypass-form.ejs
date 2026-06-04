@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title><%= form.id ? 'Edit' : 'New' %> Bypass Form</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="page-header row space-between wrap gap-md">
+      <div class="header-brand row gap-md">
+        <img src="/img/sachem.gif" alt="Sachem" class="header-logo small-logo" />
+        <div>
+          <h1><%= form.id ? 'Edit' : 'Create' %> Bypass Form</h1>
+          <p class="muted"><%= form.bypass_number %> · <%= form.status %></p>
+        </div>
+      </div>
+      <a class="button ghost" href="<%= form.id ? '/bypasses/' + form.id : '/bypasses' %>">Cancel</a>
+    </header>
+
+    <% if (error) { %><p class="error"><%= error %></p><% } %>
+
+    <form method="post" action="<%= action %>" class="form-stack">
+      <section class="card form-section">
+        <h2>1. General Information</h2>
+        <div class="grid-form">
+          <label>Bypass ID<input value="<%= form.bypass_number %>" readonly /></label>
+          <label>Date / Time Requested<input type="datetime-local" name="requested_at" value="<%= form.requested_at %>" required /></label>
+          <label>Requested By<input name="requested_by" value="<%= form.requested_by || '' %>" required /></label>
+          <label>Area / Unit<input name="area_unit" value="<%= form.area_unit || '' %>" required /></label>
+          <label>Equipment Tag<input name="equipment_tag" value="<%= form.equipment_tag || '' %>" required /></label>
+          <label>Cause & Effect Reference<input name="cause_effect_ref" value="<%= form.cause_effect_ref || '' %>" /></label>
+        </div>
+        <div class="check-grid">
+          <% systemOptions.forEach(opt => { %>
+            <label class="check-option"><input type="checkbox" name="system" value="<%= opt %>" <%= form.system?.includes(opt) ? 'checked' : '' %> /> <span><%= opt %></span></label>
+          <% }) %>
+          <label>Other System<input name="system_other" value="<%= form.system_other || '' %>" /></label>
+        </div>
+      </section>
+
+      <section class="card form-section">
+        <h2>2. Bypass Description and Risk Information</h2>
+        <label>Describe Exactly What Will Be Bypassed<textarea name="bypass_description" rows="4" required><%= form.bypass_description || '' %></textarea></label>
+        <h3>Reason for Bypass</h3>
+        <div class="check-grid">
+          <% reasonOptions.forEach(opt => { %>
+            <label class="check-option"><input type="checkbox" name="reason" value="<%= opt %>" <%= form.reason?.includes(opt) ? 'checked' : '' %> /> <span><%= opt %></span></label>
+          <% }) %>
+          <label>Other Reason<input name="reason_other" value="<%= form.reason_other || '' %>" /></label>
+        </div>
+        <h3>Hazard Protected Against</h3>
+        <div class="check-grid">
+          <% hazardOptions.forEach(opt => { %>
+            <label class="check-option"><input type="checkbox" name="hazard" value="<%= opt %>" <%= form.hazard?.includes(opt) ? 'checked' : '' %> /> <span><%= opt %></span></label>
+          <% }) %>
+          <label>Other Hazard<input name="hazard_other" value="<%= form.hazard_other || '' %>" /></label>
+        </div>
+        <label>Consequence if Demand Occurs During Bypass<textarea name="consequence" rows="3"><%= form.consequence || '' %></textarea></label>
+        <div class="grid-form">
+          <label>Risk Classification
+            <select name="risk_classification">
+              <option value="">Select...</option>
+              <% riskOptions.forEach(opt => { %><option value="<%= opt %>" <%= form.risk_classification === opt ? 'selected' : '' %>><%= opt %></option><% }) %>
+            </select>
+          </label>
+          <label>Current Process Conditions
+            <select name="process_conditions">
+              <option value="">Select...</option>
+              <% processOptions.forEach(opt => { %><option value="<%= opt %>" <%= form.process_conditions === opt ? 'selected' : '' %>><%= opt %></option><% }) %>
+            </select>
+          </label>
+          <label>Other Active Bypasses
+            <select name="other_active_bypasses">
+              <option value="">Select...</option>
+              <option value="Yes" <%= form.other_active_bypasses === 'Yes' ? 'selected' : '' %>>Yes</option>
+              <option value="No" <%= form.other_active_bypasses === 'No' ? 'selected' : '' %>>No</option>
+            </select>
+          </label>
+        </div>
+        <label>Details of Other Active Bypasses<textarea name="other_active_bypasses_details" rows="2"><%= form.other_active_bypasses_details || '' %></textarea></label>
+      </section>
+
+      <section class="card form-section">
+        <h2>3. Compensating Measures and Operating Restrictions</h2>
+        <label>Compensating Measures Required<textarea name="compensating_measures" rows="4"><%= form.compensating_measures || '' %></textarea></label>
+        <label>Operating Restrictions<textarea name="operating_restrictions" rows="4"><%= form.operating_restrictions || '' %></textarea></label>
+      </section>
+
+      <section class="card form-section">
+        <h2>4. Approval</h2>
+        <div class="approval-grid">
+          <% approvalRoles.forEach(role => {
+               const key = role.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+               const approval = form.approvals?.[key] || {};
+          %>
+            <div class="approval-row">
+              <strong><%= role %></strong>
+              <input name="approval_<%= key %>_name" placeholder="Name / Signature" value="<%= approval.name || '' %>" />
+              <input name="approval_<%= key %>_signed_at" type="datetime-local" value="<%= approval.signed_at || '' %>" />
+            </div>
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="card form-section">
+        <h2>5. Implementation</h2>
+        <div class="grid-form">
+          <label>Applied By<input name="applied_by" value="<%= form.applied_by || '' %>" /></label>
+          <label>Date / Time Applied<input type="datetime-local" name="applied_at" value="<%= form.applied_at || '' %>" /></label>
+          <label>Verified By<input name="verified_by" value="<%= form.verified_by || '' %>" /></label>
+          <label>HMI Indication Confirmed<select name="hmi_confirmed"><option value=""></option><option value="Yes" <%= form.hmi_confirmed === 'Yes' ? 'selected' : '' %>>Yes</option><option value="No" <%= form.hmi_confirmed === 'No' ? 'selected' : '' %>>No</option></select></label>
+          <label>Logged in Shift Log<select name="shift_log_logged"><option value=""></option><option value="Yes" <%= form.shift_log_logged === 'Yes' ? 'selected' : '' %>>Yes</option><option value="No" <%= form.shift_log_logged === 'No' ? 'selected' : '' %>>No</option></select></label>
+        </div>
+      </section>
+
+      <section class="card form-section">
+        <h2>6. Monitoring</h2>
+        <div class="grid-form">
+          <label>Review Frequency<input name="review_frequency" value="<%= form.review_frequency || '' %>" /></label>
+          <label>Responsible Person<input name="responsible_person" value="<%= form.responsible_person || '' %>" /></label>
+          <label>Shift Handover Required<select name="shift_handover_required"><option value=""></option><option value="Yes" <%= form.shift_handover_required === 'Yes' ? 'selected' : '' %>>Yes</option><option value="No" <%= form.shift_handover_required === 'No' ? 'selected' : '' %>>No</option></select></label>
+        </div>
+      </section>
+
+      <section class="card form-section">
+        <h2>7. Restoration and Closeout</h2>
+        <div class="grid-form">
+          <label>Removed By<input name="removed_by" value="<%= form.removed_by || '' %>" /></label>
+          <label>Date / Time Removed<input type="datetime-local" name="removed_at" value="<%= form.removed_at || '' %>" /></label>
+          <label>Function Verified<select name="function_verified"><option value=""></option><option value="Yes" <%= form.function_verified === 'Yes' ? 'selected' : '' %>>Yes</option><option value="No" <%= form.function_verified === 'No' ? 'selected' : '' %>>No</option></select></label>
+          <label>Verification Method<input name="verification_method" value="<%= form.verification_method || '' %>" /></label>
+          <label>Compensating Measures Removed<select name="measures_removed"><option value=""></option><option value="Yes" <%= form.measures_removed === 'Yes' ? 'selected' : '' %>>Yes</option><option value="No" <%= form.measures_removed === 'No' ? 'selected' : '' %>>No</option></select></label>
+          <label>Closed By<input name="closed_by" value="<%= form.closed_by || '' %>" /></label>
+        </div>
+      </section>
+
+      <div class="sticky-actions row gap wrap">
+        <button class="button primary">Save Bypass Form</button>
+        <a class="button ghost" href="<%= form.id ? '/bypasses/' + form.id : '/bypasses' %>">Cancel</a>
+      </div>
+    </form>
+  </main>
+</body>
+</html>

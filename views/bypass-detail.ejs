@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title><%= form.bypass_number %></title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="page-header row space-between wrap gap-md">
+      <div class="header-brand row gap-md">
+        <img src="/img/sachem.gif" alt="Sachem" class="header-logo small-logo" />
+        <div>
+          <h1><%= form.bypass_number %></h1>
+          <p class="muted"><%= form.area_unit %> · <%= form.equipment_tag %></p>
+        </div>
+      </div>
+      <div class="row gap wrap">
+        <a class="button ghost" href="/bypasses">Dashboard</a>
+        <% if (permissions.canEdit) { %><a class="button primary" href="/bypasses/<%= form.id %>/edit">Edit</a><% } %>
+      </div>
+    </header>
+
+    <section class="card detail-hero">
+      <div>
+        <span class="status-pill status-<%= form.status %>"><%= form.status %></span>
+        <h2><%= form.requested_by %></h2>
+        <p class="muted">Requested <%= form.requested_at %></p>
+      </div>
+      <% if (permissions.canTransition) { %>
+        <form method="post" action="/bypasses/<%= form.id %>/transition" class="row gap wrap">
+          <select name="status">
+            <option value="">Change status...</option>
+            <% statusOptions.forEach(status => { %><option value="<%= status %>"><%= status %></option><% }) %>
+          </select>
+          <button class="button">Apply</button>
+        </form>
+      <% } %>
+    </section>
+
+    <section class="detail-grid">
+      <article class="card">
+        <h2>Bypass and Risk</h2>
+        <dl>
+          <dt>System</dt><dd><%= form.system.join(', ') || 'Not recorded' %><% if (form.system_other) { %> · <%= form.system_other %><% } %></dd>
+          <dt>Description</dt><dd><%= form.bypass_description %></dd>
+          <dt>Reason</dt><dd><%= form.reason.join(', ') || 'Not recorded' %><% if (form.reason_other) { %> · <%= form.reason_other %><% } %></dd>
+          <dt>Hazard</dt><dd><%= form.hazard.join(', ') || 'Not recorded' %><% if (form.hazard_other) { %> · <%= form.hazard_other %><% } %></dd>
+          <dt>Risk Classification</dt><dd><%= form.risk_classification || 'Unclassified' %></dd>
+          <dt>Consequence</dt><dd><%= form.consequence || 'Not recorded' %></dd>
+        </dl>
+      </article>
+
+      <article class="card">
+        <h2>Controls</h2>
+        <dl>
+          <dt>Compensating Measures</dt><dd><%= form.compensating_measures || 'Not recorded' %></dd>
+          <dt>Operating Restrictions</dt><dd><%= form.operating_restrictions || 'Not recorded' %></dd>
+          <dt>Review Frequency</dt><dd><%= form.review_frequency || 'Not recorded' %></dd>
+          <dt>Responsible Person</dt><dd><%= form.responsible_person || 'Not recorded' %></dd>
+        </dl>
+      </article>
+    </section>
+
+    <section class="card">
+      <h2>Approval Roles</h2>
+      <div class="approval-summary">
+        <% Object.values(form.approvals).forEach(approval => { %>
+          <div><strong><%= approval.role %></strong><span><%= approval.name || 'Pending' %></span><small class="muted"><%= approval.signed_at || '' %></small></div>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="detail-grid">
+      <article class="card"><h2>Implementation</h2><dl><dt>Applied By</dt><dd><%= form.applied_by || 'Not recorded' %></dd><dt>Applied At</dt><dd><%= form.applied_at || 'Not recorded' %></dd><dt>Verified By</dt><dd><%= form.verified_by || 'Not recorded' %></dd><dt>HMI Confirmed</dt><dd><%= form.hmi_confirmed || 'Not recorded' %></dd><dt>Shift Log</dt><dd><%= form.shift_log_logged || 'Not recorded' %></dd></dl></article>
+      <article class="card"><h2>Restoration</h2><dl><dt>Removed By</dt><dd><%= form.removed_by || 'Not recorded' %></dd><dt>Removed At</dt><dd><%= form.removed_at || 'Not recorded' %></dd><dt>Function Verified</dt><dd><%= form.function_verified || 'Not recorded' %></dd><dt>Verification Method</dt><dd><%= form.verification_method || 'Not recorded' %></dd><dt>Closed By</dt><dd><%= form.closed_by || 'Not recorded' %></dd></dl></article>
+    </section>
+
+    <section class="card">
+      <h2>Audit Trail</h2>
+      <div class="timeline">
+        <% audits.forEach(a => { %><div><strong><%= a.action %></strong><span><%= a.username %></span><small class="muted"><%= a.changed_at %></small></div><% }) %>
+        <% if (!audits.length) { %><p class="muted">No audit entries yet.</p><% } %>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bypass Forms</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="page-header row space-between wrap gap-md">
+      <div class="header-brand row gap-md">
+        <img src="/img/sachem.gif" alt="Sachem" class="header-logo" />
+        <div>
+          <h1>Bypass Forms Dashboard</h1>
+          <p class="muted">Track Interlock / ESD bypass status, approvals, and restoration.</p>
+        </div>
+      </div>
+      <div class="row gap wrap">
+        <span class="badge">Signed in as <strong><%= user.username %></strong> (<%= user.role %>)</span>
+        <form method="post" action="/logout"><button class="button ghost">Logout</button></form>
+      </div>
+    </header>
+
+    <section class="stats-grid">
+      <article class="stat-card"><h3>Total</h3><p class="stat-value"><%= stats.total %></p></article>
+      <article class="stat-card"><h3>Submitted</h3><p class="stat-value"><%= stats.submitted %></p></article>
+      <article class="stat-card"><h3>Active</h3><p class="stat-value"><%= stats.active %></p></article>
+      <article class="stat-card"><h3>Restored</h3><p class="stat-value"><%= stats.restored %></p></article>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Filters</h2>
+      <form method="get" action="/bypasses" class="grid-form">
+        <label>Status
+          <select name="status">
+            <option value="">All</option>
+            <% statusOptions.forEach(s => { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s %></option><% }) %>
+          </select>
+        </label>
+        <label>Area / Unit<input name="area" value="<%= filters.area %>" placeholder="Area, unit, or plant" /></label>
+        <div class="row gap wrap"><button class="button primary">Apply</button><a class="button ghost" href="/bypasses">Clear</a></div>
+      </form>
+    </section>
+
+    <section class="card row gap wrap">
+      <% if (user.role !== 'viewer') { %><a class="button primary" href="/bypasses/new">New Bypass Form</a><% } %>
+      <a class="button" href="/bypasses/export.csv">Export CSV</a>
+    </section>
+
+    <section class="table-card card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Bypass ID</th><th>Status</th><th>Requested</th><th>Area / Unit</th><th>Equipment</th><th>Risk</th></tr></thead>
+          <tbody>
+            <% forms.forEach(f => { %>
+              <tr class="click-row" data-href="/bypasses/<%= f.id %>">
+                <td><strong><%= f.bypass_number %></strong></td>
+                <td><span class="status-pill status-<%= f.status %>"><%= f.status %></span></td>
+                <td><%= f.requested_at %><br><small class="muted"><%= f.requested_by %></small></td>
+                <td><%= f.area_unit %></td>
+                <td><%= f.equipment_tag %></td>
+                <td><%= f.risk_classification || 'Unclassified' %></td>
+              </tr>
+            <% }) %>
+            <% if (!forms.length) { %><tr><td colspan="6" class="muted">No bypass forms found.</td></tr><% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script>
+    document.querySelectorAll('tr.click-row').forEach((row) => {
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', () => { window.location.href = row.dataset.href; });
+    });
+  </script>
+</body>
+</html>
