@@ -129,6 +129,8 @@ button, .button {
 .button.ghost { background: #f8fafc; }
 .badge { border: 1px solid var(--border); border-radius: 999px; padding: 7px 10px; background: #fff; }
 .error { border: 1px solid #fecaca; background: #fef2f2; color: #991b1b; border-radius: 12px; padding: 10px 12px; }
+.success { border: 1px solid #bbf7d0; background: #f0fdf4; color: #166534; border-radius: 12px; padding: 10px 12px; }
+.admin-password-form input { min-width: 220px; }
 
 .form-stack { display: grid; gap: 14px; }
 .form-section h2 { margin: 0 0 12px; }

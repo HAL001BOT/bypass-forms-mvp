@@ -70,6 +70,11 @@ function auth(req, res, next) {
   return next();
 }
 
+function adminOnly(req, res, next) {
+  if (req.session.user?.role !== 'admin') return res.status(403).send('Admin only');
+  return next();
+}
+
 function canEdit(user, form) {
   if (!user) return false;
   if (user.role === 'admin' || user.role === 'supervisor' || user.role === 'engineer') return form.status !== 'closed';
@@ -181,6 +186,14 @@ function statusStats() {
   };
 }
 
+function listUsersForAdmin() {
+  return db.prepare(`
+    SELECT id, username, role, full_name, created_at
+    FROM users
+    ORDER BY role = 'admin' DESC, username ASC
+  `).all();
+}
+
 app.get('/', (req, res) => res.redirect(req.session.user ? '/bypasses' : '/login'));
 
 app.get('/login', (req, res) => res.render('login', { error: null }));
@@ -197,6 +210,30 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/logout', auth, (req, res) => req.session.destroy(() => res.redirect('/login')));
+
+app.get('/admin/users', auth, adminOnly, (req, res) => {
+  res.render('admin-users', {
+    users: listUsersForAdmin(),
+    message: req.query.updated ? `Password updated for ${req.query.updated}.` : null,
+    error: null,
+  });
+});
+
+app.post('/admin/users/:id/password', auth, adminOnly, (req, res) => {
+  const id = Number(req.params.id);
+  const password = String(req.body.password || '');
+  const user = Number.isInteger(id) ? db.prepare('SELECT id, username FROM users WHERE id = ?').get(id) : null;
+  if (!user) return res.status(404).send('User not found');
+  if (password.length < 8) {
+    return res.status(400).render('admin-users', {
+      users: listUsersForAdmin(),
+      message: null,
+      error: 'Password must be at least 8 characters.',
+    });
+  }
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(bcrypt.hashSync(password, 10), id);
+  res.redirect(`/admin/users?updated=${encodeURIComponent(user.username)}`);
+});
 
 app.get('/bypasses', auth, (req, res) => {
   const filters = {

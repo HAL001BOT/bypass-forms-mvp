@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Users</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="page-header row space-between wrap gap-md">
+      <div class="header-brand row gap-md">
+        <img src="/img/sachem.gif" alt="Sachem" class="header-logo small-logo" />
+        <div>
+          <h1>Admin Users</h1>
+          <p class="muted">Reset login passwords for bypass form users.</p>
+        </div>
+      </div>
+      <a class="button ghost" href="/bypasses">Dashboard</a>
+    </header>
+
+    <% if (message) { %><p class="success"><%= message %></p><% } %>
+    <% if (error) { %><p class="error"><%= error %></p><% } %>
+
+    <section class="table-card card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Role</th><th>Name</th><th>Created</th><th>Change Password</th></tr></thead>
+          <tbody>
+            <% users.forEach(u => { %>
+              <tr>
+                <td><strong><%= u.username %></strong></td>
+                <td><span class="badge"><%= u.role %></span></td>
+                <td><%= u.full_name || 'Not set' %></td>
+                <td><%= u.created_at %></td>
+                <td>
+                  <form method="post" action="/admin/users/<%= u.id %>/password" class="row gap wrap admin-password-form">
+                    <input type="password" name="password" minlength="8" placeholder="New password" required />
+                    <button class="button primary">Update</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
