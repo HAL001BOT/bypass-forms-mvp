@@ -2,9 +2,10 @@ const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
-const { db, migrate, nextBypassNumber, audit } = require('./db');
+const { db, migrate, nextBypassNumber, audit, seedDefaultUsersIfEmpty } = require('./db');
 
 migrate();
+if (process.env.SEED_DEFAULT_PASS) seedDefaultUsersIfEmpty(process.env.SEED_DEFAULT_PASS);
 
 const app = express();
 const PORT = process.env.PORT || 3010;

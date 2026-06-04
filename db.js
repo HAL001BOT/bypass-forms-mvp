@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 const Database = require('better-sqlite3');
 
 const dataDir = path.join(__dirname, 'data');
@@ -107,4 +108,33 @@ function audit(bypassId, action, detail, userId) {
   `).run(bypassId, action, detail ? JSON.stringify(detail) : null, userId);
 }
 
-module.exports = { db, migrate, nextBypassNumber, audit };
+function seedDefaultUsers(defaultPass) {
+  if (!defaultPass) return false;
+  const users = [
+    ['admin', 'admin', 'EHS Admin'],
+    ['supervisor', 'supervisor', 'Shift Supervisor'],
+    ['engineer', 'engineer', 'Controls Engineer'],
+    ['operator', 'operator', 'Field Operator'],
+    ['viewer', 'viewer', 'Read Only Viewer'],
+  ];
+  const insert = db.prepare(`
+    INSERT INTO users (username, password_hash, role, full_name)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(username) DO UPDATE SET role = excluded.role, full_name = excluded.full_name
+  `);
+  const tx = db.transaction(() => {
+    for (const [username, role, fullName] of users) {
+      insert.run(username, bcrypt.hashSync(defaultPass, 10), role, fullName);
+    }
+  });
+  tx();
+  return true;
+}
+
+function seedDefaultUsersIfEmpty(defaultPass) {
+  const count = db.prepare('SELECT COUNT(*) c FROM users').get().c;
+  if (count > 0) return false;
+  return seedDefaultUsers(defaultPass);
+}
+
+module.exports = { db, migrate, nextBypassNumber, audit, seedDefaultUsers, seedDefaultUsersIfEmpty };
