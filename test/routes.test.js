@@ -39,3 +39,7 @@ test('login and create bypass form', async () => {
   assert.equal(row.area_unit, 'Unit 1');
   assert.equal(row.status, 'draft');
 });
+
+test('trusts Render proxy for secure production cookies', () => {
+  assert.equal(app.get('trust proxy'), 1);
+});
